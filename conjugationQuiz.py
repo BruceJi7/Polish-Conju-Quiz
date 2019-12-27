@@ -211,9 +211,9 @@ def quizRound(initObjects, gameObjects, score):
 
         # Is the timer up?
         currentTime = time.time()
-        timeElapsed = round(currentTime - startTime)
+        timeElapsed = gameLength - round(currentTime - startTime)
 
-        if timeElapsed > gameLength:
+        if timeElapsed <= 0:
             return False, score
 
         timerSurf = mainFont(25).render(str(timeElapsed), 1, MAINTEXTCOLOR)
@@ -258,6 +258,77 @@ def quizRound(initObjects, gameObjects, score):
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def initMenu(initObjects):
+    screen = initObjects[0]
+    FPSCLOCK = initObjects[1]
+    DISPLAYSURF = initObjects[2]
+    DISPLAYRECT = initObjects[3]
+
+    while True:
+        checkForQuit()
+        
+        #Center the screen on resizing
+        newDim = checkForResize()
+        if newDim:
+            bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
+            screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)
+            DISPLAYRECT.center = (bgWIDTH/2, bgHEIGHT/2)
+
+        # Clear the screen before blitting images onto it
+        screen.fill(BLACK)
+        DISPLAYSURF.fill(BKGCOLOR)
+
+        # Drawing the introduction message
+        introMessage = 'Polish Conjugation Quiz'
+        introMessageSurf = mainFont().render(introMessage, 1, MAINTEXTCOLOR)
+        introMessageRect = introMessageSurf.get_rect()
+        introMessageRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/4)
+
+        DISPLAYSURF.blit(introMessageSurf, introMessageRect)
+
+
+        durationOptions = [30, 60, 90, 120, 300, 'seconds']
+
+        buttonsY = (WINDOWHEIGHT/3)*2
+        buttonSpacing = WINDOWWIDTH/7
+        buttonXMargin = WINDOWWIDTH/7
+
+        durationButtons = []
+        for number, button in enumerate(durationOptions):
+            
+            buttonSurf = mainFont(30).render(str(button), 1, MAINTEXTCOLOR)
+            buttonRect = buttonSurf.get_rect()
+            buttonRect.centery = buttonsY
+            buttonRect.centerx = (buttonXMargin + buttonSpacing * number)
+            DISPLAYSURF.blit(buttonSurf, buttonRect)
+            durationButtons.append(buttonRect)
+
+        mouseX, mouseY = pygame.mouse.get_pos()
+
+
+        mouseClicked = False
+        checkForQuit()
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONUP:
+                mouseClicked = True
+        
+        if mouseClicked:
+            for index, button in enumerate(durationButtons[:5]):
+                if button.collidepoint(mouseX, mouseY):
+                    print(durationOptions[index])
+                    return durationOptions[index]
+
+
+        
+
+
+        # Draw the main surface on the background surface
+        screen.blit(DISPLAYSURF, DISPLAYRECT)
+
+
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
+
 
 
 def mainQuiz():
@@ -281,10 +352,11 @@ def mainQuiz():
 
     
     initObjects = [screen, FPSCLOCK, DISPLAYSURF, DISPLAYRECT, wordDictionary]
-    startTime = time.time()
+    
     gameLength = 60 # In seconds
     score = 0
-
+    gameLength = initMenu(initObjects)
+    startTime = time.time()
     gameObjects = [gameLength, startTime]
 
     running = True
