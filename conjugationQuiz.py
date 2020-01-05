@@ -45,6 +45,69 @@ def checkForResize():
         newSize = event.size
         return newSize
 
+englishHints = {
+        'singular':{
+            'first-person': 'I',
+            'second-person': 'You(sg)',
+            'third-person': 'He/She',
+            },
+        'plural':{
+            'first-person': 'We',
+            'second-person': 'You(pl)',
+            'third-person': 'They',
+            }
+    }
+
+polishHints = {
+        'singular':{
+            'first-person': 'Ja',
+            'second-person': 'Ty',
+            'third-person': 'On / Ona',
+            },
+        'plural':{
+            'first-person': 'My',
+            'second-person': 'Wy',
+            'third-person': 'Oni / One',
+            }
+    }
+
+
+class Quiz():
+    def __init__(self, polishWordDict):
+        self.wordSource = polishWordDict
+        self.engHints = englishHints
+        self.polHints = polishHints
+        self.__sessionCorrectAnswers = None
+        self.correctPolishWord = None
+        self.correctEnglishPronoun = None
+        self.correctPolishPronoun = None
+
+
+    
+    def setSessionCorrectAnswers(self):
+        answers = self.getSessionCorrectAnswers()
+        self.correctPolishWord = answers['polishWord']
+        self.correctEnglishPronoun = answers['engPronoun']
+        self.correctPolishPronoun = answers['polPronoun']
+
+
+
+    
+    def getSessionCorrectAnswers(self): # Use this to cycle the correct answers.
+        '''
+        Chooses a random word, the matching pronoun in English and in Polish
+        '''
+        chosenWord = random.choice(list(self.wordSource.keys())) # Chooses which Polish word form to use
+        chosenPlurality = random.choice(list(self.wordSource[chosenWord].keys())) #chooses which plurality to use
+        chosenPerson = random.choice(list(self.wordSource[chosenWord][chosenPlurality].keys())) #Chooses which person to use
+        chosenRightAnswer = self.wordSource[chosenWord][chosenPlurality][chosenPerson].capitalize()
+        randomDict = {
+            'polishWord': chosenRightAnswer,
+            'engPronoun': englishHints[chosenPlurality][chosenPerson],
+            'polPronoun': polishHints[chosenPlurality][chosenPerson]
+        }
+        return randomDict
+
 
 # Random choice of word from source dict. Create QuizQuestion object for it. Run every round.
 def getQuizQuestion(polishVerbDict):
@@ -74,9 +137,10 @@ def getQuizQuestion(polishVerbDict):
             }
     }
 
-    chosenWord = random.choice(list(polishVerbDict.keys()))
-    chosenPlurality = random.choice(list(polishVerbDict[chosenWord].keys())) #Use this to get english hint 'question'
-    chosenPerson = random.choice(list(polishVerbDict[chosenWord][chosenPlurality].keys())) 
+    chosenWord = random.choice(list(polishVerbDict.keys())) # Chooses which Polish word to use
+    chosenPlurality = random.choice(list(polishVerbDict[chosenWord].keys())) #chooses which plurality to use
+    chosenPerson = random.choice(list(polishVerbDict[chosenWord][chosenPlurality].keys())) #Chooses which person to use
+
 
     chosenRightAnswer = polishVerbDict[chosenWord][chosenPlurality][chosenPerson].capitalize()
     englishHint = englishHints[chosenPlurality][chosenPerson] 
@@ -481,9 +545,18 @@ def mainQuiz():
         
 
         
+def test():
+    wordDictionary = openShelf()
+    sessionQuiz = Quiz(wordDictionary)
+    sessionQuiz.setSessionCorrectAnswers()
 
+
+    print(sessionQuiz.correctPolishWord)
+    print(sessionQuiz.correctPolishPronoun)
+    print(sessionQuiz.correctEnglishPronoun)
         
 
 
 if __name__ == "__main__":
-    mainQuiz()
+    # mainQuiz()
+    test()
