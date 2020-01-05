@@ -51,14 +51,26 @@ def getQuizQuestion(polishVerbDict):
 
     englishHints = {
         'singular':{
-            'first-person': 'I - Ja',
-            'second-person': 'You - Ty',
-            'third-person': 'He/She - On/Ona',
+            'first-person': 'I',
+            'second-person': 'You(sg)',
+            'third-person': 'He/She',
             },
         'plural':{
-            'first-person': 'We - My',
-            'second-person': 'You - Wy',
-            'third-person': 'They - Oni/One',
+            'first-person': 'We',
+            'second-person': 'You(pl)',
+            'third-person': 'They',
+            }
+    }
+    polishHints = {
+        'singular':{
+            'first-person': 'Ja',
+            'second-person': 'Ty',
+            'third-person': 'On / Ona',
+            },
+        'plural':{
+            'first-person': 'My',
+            'second-person': 'Wy',
+            'third-person': 'Oni / One',
             }
     }
 
@@ -67,7 +79,9 @@ def getQuizQuestion(polishVerbDict):
     chosenPerson = random.choice(list(polishVerbDict[chosenWord][chosenPlurality].keys())) 
 
     chosenRightAnswer = polishVerbDict[chosenWord][chosenPlurality][chosenPerson].capitalize()
-    chosenQuestion = englishHints[chosenPlurality][chosenPerson]
+    englishHint = englishHints[chosenPlurality][chosenPerson] 
+    polishHint = polishHints[chosenPlurality][chosenPerson]
+    chosenQuestion = f'{englishHint} - {polishHint}'
 
     answers = []
     for pluralityKey in polishVerbDict[chosenWord].keys():
@@ -231,7 +245,10 @@ def quizRound(initObjects, gameObjects, score):
 
         mouseClicked = False
         for event in pygame.event.get():
-            if event.type == MOUSEBUTTONUP:
+            if event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    terminate()
+            elif event.type == MOUSEBUTTONUP:
                 mouseClicked = True
         
 
@@ -264,6 +281,12 @@ def initMenu(initObjects):
     DISPLAYSURF = initObjects[2]
     DISPLAYRECT = initObjects[3]
 
+
+    durationChoice, durationHighlight = None, None
+    modeChoice, modeIndex = None, 0
+
+
+    gameTypeChoice = None
     while True:
         checkForQuit()
         
@@ -286,22 +309,33 @@ def initMenu(initObjects):
 
         DISPLAYSURF.blit(introMessageSurf, introMessageRect)
 
-
+        #Drawing the menu buttons
         durationOptions = [30, 60, 90, 120, 300, 'seconds']
+        modes = ['Match the Verb Case - Present', 'Match the Pronoun']
 
         buttonsY = (WINDOWHEIGHT/3)*2
         buttonSpacing = WINDOWWIDTH/7
         buttonXMargin = WINDOWWIDTH/7
 
+        #Drawing duration options
         durationButtons = []
         for number, button in enumerate(durationOptions):
-            
-            buttonSurf = mainFont(30).render(str(button), 1, MAINTEXTCOLOR)
+            if durationChoice and highlightBox == number:
+                highlight = LIGHTGREY
+            else:
+                highlight = None
+            buttonSurf = mainFont(30).render(str(button), 1, MAINTEXTCOLOR, highlight)
             buttonRect = buttonSurf.get_rect()
             buttonRect.centery = buttonsY
             buttonRect.centerx = (buttonXMargin + buttonSpacing * number)
             DISPLAYSURF.blit(buttonSurf, buttonRect)
             durationButtons.append(buttonRect)
+        
+        #Drawing game type options
+        gameTypeSurf = mainFont(30).render(modes[modeIndex], 1, MAINTEXTCOLOR)
+        gameTypeRect = gameTypeSurf.get_rect()
+        gameTypeRect.center = (WINDOWWIDTH/2 ,(WINDOWHEIGHT/3*2 - 100))
+        DISPLAYSURF.blit(gameTypeSurf, gameTypeRect)
 
         mouseX, mouseY = pygame.mouse.get_pos()
 
@@ -313,10 +347,20 @@ def initMenu(initObjects):
                 mouseClicked = True
         
         if mouseClicked:
-            for index, button in enumerate(durationButtons[:5]):
-                if button.collidepoint(mouseX, mouseY):
-                    print(durationOptions[index])
-                    return durationOptions[index]
+            if gameTypeRect.collidepoint(mouseX, mouseY):
+                modeIndex += 1
+                if modeIndex >= len(modes):
+                    modeIndex = 0
+            else:
+
+                for index, button in enumerate(durationButtons[:5]):
+                    if button.collidepoint(mouseX, mouseY):
+                        highlightBox = index
+                        durationChoice = durationOptions[index]
+                        # return durationOptions[index]
+            
+
+        
 
 
         
@@ -329,7 +373,65 @@ def initMenu(initObjects):
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def gameOver(initObjects, gameObjects, score):
+    screen = initObjects[0]
+    FPSCLOCK = initObjects[1]
+    DISPLAYSURF = initObjects[2]
+    DISPLAYRECT = initObjects[3]
 
+    gameLength = gameObjects[0]
+
+
+    while True:
+        checkForQuit()
+        
+        #Center the screen on resizing
+        newDim = checkForResize()
+        if newDim:
+            bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
+            screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)
+            DISPLAYRECT.center = (bgWIDTH/2, bgHEIGHT/2)
+
+        # Clear the screen before blitting images onto it
+        screen.fill(BLACK)
+        DISPLAYSURF.fill(BKGCOLOR)
+
+        # Drawing the Game Over message
+        gameOverMessage = 'Time Up'
+        gameOverMessageSurf = mainFont().render(gameOverMessage, 1, MAINTEXTCOLOR)
+        gameOverMessageRect = gameOverMessageSurf.get_rect()
+        gameOverMessageRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/4)
+
+        correctRate = round(gameLength / score, 2)
+        resultMessages = [
+            f'You played for {gameLength} seconds,',
+            f'and made {score} correct answers.',
+            f"That's a rate of {correctRate} seconds per answer."
+        ]
+        
+        
+        for line, rMessage in enumerate(resultMessages):
+            messageY = WINDOWHEIGHT / 2 + (50 * line+1) # To get the lines to show up on different... lines
+            resultMessageSurf = mainFont(30).render(rMessage, 1, MAINTEXTCOLOR)
+            resultMessageRect = resultMessageSurf.get_rect()
+            resultMessageRect.center = (WINDOWWIDTH/2, messageY)
+            DISPLAYSURF.blit(resultMessageSurf, resultMessageRect)
+
+
+        DISPLAYSURF.blit(gameOverMessageSurf, gameOverMessageRect)
+        
+
+
+
+
+
+
+        # Draw the main surface on the background surface
+        screen.blit(DISPLAYSURF, DISPLAYRECT)
+
+
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
 
 def mainQuiz():
     pygame.init()
@@ -359,10 +461,12 @@ def mainQuiz():
     startTime = time.time()
     gameObjects = [gameLength, startTime]
 
-    running = True
+    running = True #Is the game session running?
     while running:
         checkForQuit()
         running, score = quizRound(initObjects, gameObjects, score)
+    gameOver(initObjects, gameObjects, score)
+    
 
         
 
