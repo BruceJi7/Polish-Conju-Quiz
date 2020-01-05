@@ -312,6 +312,7 @@ def initMenu(initObjects):
         #Drawing the menu buttons
         durationOptions = [30, 60, 90, 120, 300, 'seconds']
         modes = ['Match the Verb Case - Present', 'Match the Pronoun']
+        modeTypes = ['VCasePresent', 'Pronoun']
 
         buttonsY = (WINDOWHEIGHT/3)*2
         buttonSpacing = WINDOWWIDTH/7
@@ -337,6 +338,12 @@ def initMenu(initObjects):
         gameTypeRect.center = (WINDOWWIDTH/2 ,(WINDOWHEIGHT/3*2 - 100))
         DISPLAYSURF.blit(gameTypeSurf, gameTypeRect)
 
+        #Drawing start button
+        startSurf = mainFont(35).render('Start!', 1, MAINTEXTCOLOR, LIGHTGREY)
+        startRect = startSurf.get_rect()
+        startRect.center = (WINDOWWIDTH/2, (WINDOWHEIGHT/3*2 + 100))
+        DISPLAYSURF.blit(startSurf, startRect)
+
         mouseX, mouseY = pygame.mouse.get_pos()
 
 
@@ -351,6 +358,9 @@ def initMenu(initObjects):
                 modeIndex += 1
                 if modeIndex >= len(modes):
                     modeIndex = 0
+            elif startRect.collidepoint(mouseX, mouseY):
+                if durationChoice:
+                    return durationChoice, modeTypes[modeIndex]
             else:
 
                 for index, button in enumerate(durationButtons[:5]):
@@ -457,9 +467,9 @@ def mainQuiz():
     
     gameLength = 60 # In seconds
     score = 0
-    gameLength = initMenu(initObjects)
+    gameLength, gameType = initMenu(initObjects)
     startTime = time.time()
-    gameObjects = [gameLength, startTime]
+    gameObjects = [gameLength, startTime, gameType]
 
     running = True #Is the game session running?
     while running:
