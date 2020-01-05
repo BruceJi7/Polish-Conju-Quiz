@@ -71,6 +71,15 @@ polishHints = {
             }
     }
 
+def getListFromDict(dictionary):
+    answers = []
+    for pluralityKey in dictionary.keys():
+        for personKey in dictionary[pluralityKey].keys():
+            answers.append(dictionary[pluralityKey][personKey].capitalize())
+    return answers
+
+
+
 
 class Quiz():
     def __init__(self, polishWordDict):
@@ -79,19 +88,21 @@ class Quiz():
         self.polHints = polishHints
         self.__sessionCorrectAnswers = None
         self.correctPolishWord = None
+        self.correctPolishLemma = None
         self.correctEnglishPronoun = None
         self.correctPolishPronoun = None
 
+        self.__polishWordLabels = None
+        self.__englishPronounLabels = None
+        self.__polishPronounLabels = None
 
     
-    def setSessionCorrectAnswers(self):
+    def setSessionCorrectAnswers(self): # Sets all correct words
         answers = self.getSessionCorrectAnswers()
         self.correctPolishWord = answers['polishWord']
+        self.correctPolishLemma = answers['polishWordLemmas']
         self.correctEnglishPronoun = answers['engPronoun']
         self.correctPolishPronoun = answers['polPronoun']
-
-
-
     
     def getSessionCorrectAnswers(self): # Use this to cycle the correct answers.
         '''
@@ -104,10 +115,25 @@ class Quiz():
         randomDict = {
             'polishWord': chosenRightAnswer,
             'engPronoun': englishHints[chosenPlurality][chosenPerson],
-            'polPronoun': polishHints[chosenPlurality][chosenPerson]
+            'polPronoun': polishHints[chosenPlurality][chosenPerson],
+            'polishWordLemmas': chosenWord
         }
         return randomDict
 
+    @property
+    def polishWordLabels(self):
+        chosenWordDict = self.wordSource[self.correctPolishLemma]
+        return getListFromDict(chosenWordDict)
+
+    @property
+    def englishPronounLabels(self):
+        return getListFromDict(englishHints)
+    
+    @property
+    def polishPronounLabels(self):
+        return getListFromDict(polishHints)
+    
+    
 
 # Random choice of word from source dict. Create QuizQuestion object for it. Run every round.
 def getQuizQuestion(polishVerbDict):
@@ -554,6 +580,9 @@ def test():
     print(sessionQuiz.correctPolishWord)
     print(sessionQuiz.correctPolishPronoun)
     print(sessionQuiz.correctEnglishPronoun)
+
+    print(sessionQuiz.polishPronounLabels)
+    print(sessionQuiz.polishWordLabels)
         
 
 
