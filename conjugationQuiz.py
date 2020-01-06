@@ -37,37 +37,30 @@ def checkForQuit():
 
 
 # For getting the new size of a resized window
-def checkForResize():
-    newScreenWidth = None
-    newScreenHeight = None
-
-    for event in pygame.event.get(VIDEORESIZE):
-        newSize = event.size
-        return newSize
 
 englishHints = {
         'singular':{
             'first-person': 'I',
-            'second-person': 'You(sg)',
-            'third-person': 'He/She',
+            'second-person': 'you(sg)',
+            'third-person': 'he/she',
             },
         'plural':{
-            'first-person': 'We',
-            'second-person': 'You(pl)',
-            'third-person': 'They',
+            'first-person': 'we',
+            'second-person': 'you(pl)',
+            'third-person': 'they',
             }
     }
 
 polishHints = {
         'singular':{
-            'first-person': 'Ja',
-            'second-person': 'Ty',
-            'third-person': 'On / Ona',
+            'first-person': 'ja',
+            'second-person': 'ty',
+            'third-person': 'on / ona',
             },
         'plural':{
-            'first-person': 'My',
-            'second-person': 'Wy',
-            'third-person': 'Oni / One',
+            'first-person': 'my',
+            'second-person': 'wy',
+            'third-person': 'oni / one',
             }
     }
 
@@ -78,7 +71,8 @@ def getListFromDict(dictionary):
             answers.append(dictionary[pluralityKey][personKey])
     return answers
 
-
+def mainFont(size=50):
+    return pygame.font.SysFont('calibri', size)
 
 
 class Quiz():
@@ -115,7 +109,7 @@ class Quiz():
         chosenWord = random.choice(list(self.wordSource.keys())) # Chooses which Polish word form to use
         chosenPlurality = random.choice(list(self.wordSource[chosenWord].keys())) #chooses which plurality to use
         chosenPerson = random.choice(list(self.wordSource[chosenWord][chosenPlurality].keys())) #Chooses which person to use
-        chosenRightAnswer = self.wordSource[chosenWord][chosenPlurality][chosenPerson].capitalize()
+        chosenRightAnswer = self.wordSource[chosenWord][chosenPlurality][chosenPerson]
         randomDict = {
             'polishWord': chosenRightAnswer,
             'engPronoun': englishHints[chosenPlurality][chosenPerson],
@@ -148,7 +142,7 @@ class Quiz():
     def drawQuestionBox(self, x, y, inSurface):
         quizType = self.quizType
         if quizType == 'VCasePresent':
-            questionText = self.correctPolishLemma.capitalize()
+            questionText = self.correctPolishLemma
             # hintText = f'{self.correctEnglishPronoun} - {self.correctPolishPronoun}'
         elif quizType in  ('Pronoun', 'EngPro'): 
             questionText = self.correctPolishWord
@@ -172,7 +166,7 @@ class Quiz():
         if self.quizType == 'VCasePresent':
             hintText = f'{self.correctEnglishPronoun} - {self.correctPolishPronoun}'
         elif self.quizType in ('Pronoun', 'EngPro'):
-            hintText = f'{self.correctPolishLemma.capitalize()}'
+            hintText = f'{self.correctPolishLemma}'
 
         surfaceWidth = 300
         surfaceHeight = 50
@@ -213,7 +207,7 @@ class Quiz():
         for number, answer in enumerate(self.labels):
             answerButtonSurf = pygame.Surface((answerBoxWidth, answerBoxHeight))
             answerButtonSurf.fill(LIGHTGREY)
-            answerTextSurf = mainFont(20).render(answer.capitalize(), 1, MAINTEXTCOLOR)
+            answerTextSurf = mainFont(20).render(answer, 1, MAINTEXTCOLOR)
             answerTextRect = answerTextSurf.get_rect()
             answerTextRect.center = (answerBoxWidth/2, answerBoxHeight/2)
             answerButtonSurf.blit(answerTextSurf, answerTextRect)
@@ -233,7 +227,7 @@ class Quiz():
             correct = self.correctPolishPronoun
         elif self.quizType == 'EngPro':
             correct = self.correctEnglishPronoun
-        print(f'test: {correct}, you chose {candidate}')
+        # print(f'test: {correct}, you chose {candidate}')
 
         if correct == candidate:
             return True
@@ -241,137 +235,6 @@ class Quiz():
             return False    
 
     
-
-# Random choice of word from source dict. Create QuizQuestion object for it. Run every round.
-def getQuizQuestion(polishVerbDict):
-
-    englishHints = {
-        'singular':{
-            'first-person': 'I',
-            'second-person': 'You(sg)',
-            'third-person': 'He/She',
-            },
-        'plural':{
-            'first-person': 'We',
-            'second-person': 'You(pl)',
-            'third-person': 'They',
-            }
-    }
-    polishHints = {
-        'singular':{
-            'first-person': 'Ja',
-            'second-person': 'Ty',
-            'third-person': 'On / Ona',
-            },
-        'plural':{
-            'first-person': 'My',
-            'second-person': 'Wy',
-            'third-person': 'Oni / One',
-            }
-    }
-
-    chosenWord = random.choice(list(polishVerbDict.keys())) # Chooses which Polish word to use
-    chosenPlurality = random.choice(list(polishVerbDict[chosenWord].keys())) #chooses which plurality to use
-    chosenPerson = random.choice(list(polishVerbDict[chosenWord][chosenPlurality].keys())) #Chooses which person to use
-
-
-    chosenRightAnswer = polishVerbDict[chosenWord][chosenPlurality][chosenPerson].capitalize()
-    englishHint = englishHints[chosenPlurality][chosenPerson] 
-    polishHint = polishHints[chosenPlurality][chosenPerson]
-    chosenQuestion = f'{englishHint} - {polishHint}'
-
-    answers = []
-    for pluralityKey in polishVerbDict[chosenWord].keys():
-        for personKey in polishVerbDict[chosenWord][pluralityKey].keys():
-            answers.append(polishVerbDict[chosenWord][pluralityKey][personKey].capitalize())
-    
-    return QuizQuestion(chosenQuestion, chosenWord, chosenRightAnswer, answers)
-
-
-class QuizQuestion():
-    def __init__(self, question, hint, rightAnswer, answers):
-        self.question = question
-        self.hint = hint
-        self.rightAnswer = rightAnswer
-        self.answers = answers
-
-    def checkCorrect(self, toCheck):
-        if toCheck == self.rightAnswer:
-            return True
-        else:
-            return False
-
-def mainFont(size=50):
-    return pygame.font.SysFont('calibri', size)
-
-class QuestionDisplay():
-    def __init__(self, qqObject):
-        self.qq = qqObject
-        self.__hintSurface = None
-        self.hintRect = self.makeRect(self.hintSurface)
-        self.answerButtons = self.makeAnswerButtons()
-        self.answerButtonRects = [self.makeRect(ansButton) for ansButton in self.answerButtons]
-        self.__questionSurface = None
-        self.questionRect = self.makeRect(self.questionSurface)
-
-
-
-    @property
-    def hintSurface(self):
-        surfaceWidth = 200
-        surfaceHeight = 50
-
-        self.__hintSurface = pygame.Surface((surfaceWidth, surfaceHeight), pygame.SRCALPHA)
-        self.__hintSurface.fill(BKGCOLOR)
-
-        message = self.qq.hint
-        messageSurf = mainFont().render(message, 1, MAINTEXTCOLOR)
-        messageRect = messageSurf.get_rect()
-        messageRect.center = (surfaceWidth/2, surfaceHeight/2)
-
-        self.__hintSurface.blit(messageSurf, messageRect)
-
-        return self.__hintSurface
-
-
-    def makeRect(self, surface):
-        return surface.get_rect()
-
-    @property
-    def questionSurface(self):
-
-        surfaceWidth = 300
-        surfaceHeight = 50
-
-        self.__questionSurface = pygame.Surface((surfaceWidth, surfaceHeight), pygame.SRCALPHA)
-        self.__questionSurface.fill(BKGCOLOR)
-
-        message = self.qq.question
-        messageSurf = mainFont(30).render(message, 1, MAINTEXTCOLOR)
-        messageRect = messageSurf.get_rect()
-        messageRect.center = (surfaceWidth/2, surfaceHeight/2)
-
-        self.__questionSurface.blit(messageSurf, messageRect)
-
-        return self.__questionSurface
-
-    
-    def makeAnswerButtons(self):
-        answerBoxWidth = 100
-        answerBoxHeight = 40
-        answerButtons = []
-        random.shuffle(self.qq.answers)
-        for answer in self.qq.answers:
-            answerButtonSurf = pygame.Surface((answerBoxWidth, answerBoxHeight))
-            answerButtonSurf.fill(LIGHTGREY)
-            answerTextSurf = mainFont(20).render(answer, 1, MAINTEXTCOLOR)
-            answerTextRect = answerTextSurf.get_rect()
-            answerTextRect.center = (answerBoxWidth/2, answerBoxHeight/2)
-            answerButtonSurf.blit(answerTextSurf, answerTextRect)
-            answerButtons.append(answerButtonSurf)
-        return answerButtons
-
-
 
 def quizRound(initObjects, gameObjects, score):
 
@@ -415,6 +278,7 @@ def quizRound(initObjects, gameObjects, score):
             bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
             screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)
             DISPLAYRECT.center = (bgWIDTH/2, bgHEIGHT/2)
+
 
         # Clear the screen before blitting images onto it
         screen.fill(BLACK)
@@ -598,7 +462,9 @@ def gameOver(initObjects, gameObjects, score):
         checkForQuit()
         
         #Center the screen on resizing
-        newDim = checkForResize()
+        newDim = None
+        for event in pygame.event.get(VIDEORESIZE):
+            newDim = event.size
         if newDim:
             bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
             screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)

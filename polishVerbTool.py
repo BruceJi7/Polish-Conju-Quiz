@@ -119,7 +119,7 @@ def openShelf():
 
 
 
-newWords=['pływać', 'leżeć', 'nieść', 'czekać', 'jeść', 'szanować']
+newWords=['być', 'iść', 'mówić', 'wyglądać', 'gotować', 'pisać', 'słuchać', 'słyszeć']
 # polishVerbs = getVerbConjugation(quizWords)
 
 # saveToShelf(polishVerbs)
