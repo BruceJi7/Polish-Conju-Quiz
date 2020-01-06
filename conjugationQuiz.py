@@ -75,7 +75,7 @@ def getListFromDict(dictionary):
     answers = []
     for pluralityKey in dictionary.keys():
         for personKey in dictionary[pluralityKey].keys():
-            answers.append(dictionary[pluralityKey][personKey].capitalize())
+            answers.append(dictionary[pluralityKey][personKey])
     return answers
 
 
@@ -87,6 +87,7 @@ class Quiz():
         self.engHints = englishHints
         self.polHints = polishHints
         self.__sessionCorrectAnswers = None
+        self.__quizType = None
         self.correctPolishWord = None
         self.correctPolishLemma = None
         self.correctEnglishPronoun = None
@@ -95,6 +96,9 @@ class Quiz():
         self.__polishWordLabels = None
         self.__englishPronounLabels = None
         self.__polishPronounLabels = None
+
+        self.labels = None
+        self.labelRects = None
 
     
     def setSessionCorrectAnswers(self): # Sets all correct words
@@ -121,6 +125,14 @@ class Quiz():
         return randomDict
 
     @property
+    def quizType(self):
+        return self.__quizType
+    
+    @quizType.setter
+    def quizType(self, setType):
+        self.__quizType = setType
+
+    @property
     def polishWordLabels(self):
         chosenWordDict = self.wordSource[self.correctPolishLemma]
         return getListFromDict(chosenWordDict)
@@ -133,6 +145,101 @@ class Quiz():
     def polishPronounLabels(self):
         return getListFromDict(polishHints)
     
+    def drawQuestionBox(self, x, y, inSurface):
+        quizType = self.quizType
+        if quizType == 'VCasePresent':
+            questionText = self.correctPolishLemma.capitalize()
+            # hintText = f'{self.correctEnglishPronoun} - {self.correctPolishPronoun}'
+        elif quizType in  ('Pronoun', 'EngPro'): 
+            questionText = self.correctPolishWord
+        
+        surfaceWidth = 300
+        surfaceHeight = 50
+
+        questionSurface = pygame.Surface((surfaceWidth, surfaceHeight), pygame.SRCALPHA)
+        questionSurface.fill(BKGCOLOR)
+
+        messageSurf = mainFont(30).render(questionText, 1, MAINTEXTCOLOR)
+        messageRect = messageSurf.get_rect()
+        messageRect.center = (surfaceWidth/2, surfaceHeight/2)
+
+        questionSurface.blit(messageSurf, messageRect)
+        questionRect = questionSurface.get_rect()
+        questionRect.center = (x, y)
+        inSurface.blit(questionSurface, questionRect)
+
+    def drawHintBox(self, x, y, inSurface):
+        if self.quizType == 'VCasePresent':
+            hintText = f'{self.correctEnglishPronoun} - {self.correctPolishPronoun}'
+        elif self.quizType in ('Pronoun', 'EngPro'):
+            hintText = f'{self.correctPolishLemma.capitalize()}'
+
+        surfaceWidth = 300
+        surfaceHeight = 50
+
+        hintSurface = pygame.Surface((surfaceWidth, surfaceHeight), pygame.SRCALPHA)
+        hintSurface.fill(BKGCOLOR)
+
+        messageSurf = mainFont(20).render(hintText, 1, MAINTEXTCOLOR)
+        messageRect = messageSurf.get_rect()
+        messageRect.center = (surfaceWidth/2, surfaceHeight/2)
+
+        hintSurface.blit(messageSurf, messageRect)
+        hintRect = hintSurface.get_rect()
+        hintRect.center = (x, y)
+        inSurface.blit(hintSurface, hintRect)            
+
+    def shuffleAnswerLabels(self):
+        if self.quizType == 'VCasePresent':
+            labelSet = self.polishWordLabels
+        elif self.quizType == 'Pronoun':
+            labelSet = self.polishPronounLabels
+        elif self.quizType == 'EngPro':
+            labelSet = self.englishPronounLabels
+        random.shuffle(labelSet)
+        self.labels = labelSet
+
+
+
+    def drawAnswerLabels(self, x, y, inSurface):
+        answerBoxWidth = 100
+        answerBoxHeight = 40
+        answerButtonRects = []
+
+        buttonsY = (WINDOWHEIGHT/3)*2
+        buttonSpacing = WINDOWWIDTH/7
+        buttonXMargin = WINDOWWIDTH/7
+
+        for number, answer in enumerate(self.labels):
+            answerButtonSurf = pygame.Surface((answerBoxWidth, answerBoxHeight))
+            answerButtonSurf.fill(LIGHTGREY)
+            answerTextSurf = mainFont(20).render(answer.capitalize(), 1, MAINTEXTCOLOR)
+            answerTextRect = answerTextSurf.get_rect()
+            answerTextRect.center = (answerBoxWidth/2, answerBoxHeight/2)
+            answerButtonSurf.blit(answerTextSurf, answerTextRect)
+            answerButtonRect = answerButtonSurf.get_rect()
+            answerButtonRect.centery = y
+            answerButtonRect.centerx = (x + (buttonSpacing*number+1))
+            answerButtonRects.append(answerButtonRect)
+            inSurface.blit(answerButtonSurf, answerButtonRect)
+
+        self.labelRects = answerButtonRects
+        
+
+    def checkCorrect(self, candidate):
+        if self.quizType == 'VCasePresent':
+            correct = self.correctPolishWord
+        elif self.quizType == 'Pronoun':
+            correct = self.correctPolishPronoun
+        elif self.quizType == 'EngPro':
+            correct = self.correctEnglishPronoun
+        print(f'test: {correct}, you chose {candidate}')
+
+        if correct == candidate:
+            return True
+        else:
+            return False    
+
     
 
 # Random choice of word from source dict. Create QuizQuestion object for it. Run every round.
@@ -277,15 +384,33 @@ def quizRound(initObjects, gameObjects, score):
 
     gameLength = gameObjects[0]
     startTime = gameObjects[1]
+    typeOfGame = gameObjects[2]
 
-    roundQuestion = getQuizQuestion(wordDictionary)
-    displayQuestion = QuestionDisplay(roundQuestion)
+    sessionQuestion = Quiz(wordDictionary)
+    sessionQuestion.quizType = typeOfGame
+    sessionQuestion.setSessionCorrectAnswers()
+    sessionQuestion.shuffleAnswerLabels()
 
     while True:
         checkForQuit()
         
         #Center the screen on resizing
-        newDim = checkForResize()
+        mouseX, mouseY = pygame.mouse.get_pos()
+
+
+        mouseClicked = False
+        newDim = None
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+            elif event.type == VIDEORESIZE:
+                newDim = event.size
+            elif event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    terminate()
+            elif event.type == MOUSEBUTTONUP:
+                mouseClicked = True
+        
         if newDim:
             bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
             screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)
@@ -296,22 +421,13 @@ def quizRound(initObjects, gameObjects, score):
         DISPLAYSURF.fill(BKGCOLOR)
 
         
-        displayQuestion.hintRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/3)
-        DISPLAYSURF.blit(displayQuestion.hintSurface, displayQuestion.hintRect)
+        sessionQuestion.drawQuestionBox(WINDOWWIDTH/2, WINDOWHEIGHT/3, DISPLAYSURF)
 
-        displayQuestion.questionRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
-        DISPLAYSURF.blit(displayQuestion.questionSurface, displayQuestion.questionRect)
+        sessionQuestion.drawHintBox(WINDOWWIDTH/2, WINDOWHEIGHT/2, DISPLAYSURF)
 
-        buttonsY = (WINDOWHEIGHT/3)*2
-        buttonSpacing = WINDOWWIDTH/7
-        buttonXMargin = WINDOWWIDTH/7
 
-        for number, button in enumerate(displayQuestion.answerButtons):
-            
-            buttonRect = displayQuestion.answerButtonRects[number]
-            buttonRect.centery = buttonsY
-            buttonRect.centerx = (buttonXMargin + buttonSpacing * number)
-            DISPLAYSURF.blit(button, buttonRect)
+        sessionQuestion.drawAnswerLabels(WINDOWWIDTH/7, (WINDOWHEIGHT/3*2), DISPLAYSURF)
+
 
         # Is the timer up?
         currentTime = time.time()
@@ -330,26 +446,16 @@ def quizRound(initObjects, gameObjects, score):
         scoreRect.topleft = (20, 20)
         DISPLAYSURF.blit(scoreSurf, scoreRect)
         
-        mouseX, mouseY = pygame.mouse.get_pos()
 
-
-        mouseClicked = False
-        for event in pygame.event.get():
-            if event.type == KEYUP:
-                if event.key == K_ESCAPE:
-                    terminate()
-            elif event.type == MOUSEBUTTONUP:
-                mouseClicked = True
-        
 
 
         selectedAnswer = None
         if mouseClicked:
-            for index, button in enumerate(displayQuestion.answerButtonRects):
+            for index, button in enumerate(sessionQuestion.labelRects):
 
                 if button.collidepoint(mouseX, mouseY):
-                    selectedAnswer = displayQuestion.qq.answers[index]
-                    if displayQuestion.qq.checkCorrect(selectedAnswer):
+                    selectedAnswer = sessionQuestion.labels[index]
+                    if sessionQuestion.checkCorrect(selectedAnswer):
                         score += 1
                         return True, score
                     else:
@@ -381,7 +487,19 @@ def initMenu(initObjects):
         checkForQuit()
         
         #Center the screen on resizing
-        newDim = checkForResize()
+        mouseClicked = False
+        newDim = None
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+            elif event.type == VIDEORESIZE:
+                newDim = event.size
+            elif event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    terminate()
+            elif event.type == MOUSEBUTTONUP:
+                mouseClicked = True
+        
         if newDim:
             bgWIDTH, bgHEIGHT = newDim[0], newDim[1]
             screen = pygame.display.set_mode((bgWIDTH, bgHEIGHT), pygame.RESIZABLE, display=0)
@@ -401,8 +519,8 @@ def initMenu(initObjects):
 
         #Drawing the menu buttons
         durationOptions = [30, 60, 90, 120, 300, 'seconds']
-        modes = ['Match the Verb Case - Present', 'Match the Pronoun']
-        modeTypes = ['VCasePresent', 'Pronoun']
+        modes = ['Match the Verb Case - Present', 'Match the Polish Pronoun', 'Match the English Pronoun']
+        modeTypes = ['VCasePresent', 'Pronoun', 'EngPro']
 
         buttonsY = (WINDOWHEIGHT/3)*2
         buttonSpacing = WINDOWWIDTH/7
@@ -436,13 +554,6 @@ def initMenu(initObjects):
 
         mouseX, mouseY = pygame.mouse.get_pos()
 
-
-        mouseClicked = False
-        checkForQuit()
-        for event in pygame.event.get():
-            if event.type == MOUSEBUTTONUP:
-                mouseClicked = True
-        
         if mouseClicked:
             if gameTypeRect.collidepoint(mouseX, mouseY):
                 modeIndex += 1
@@ -450,6 +561,7 @@ def initMenu(initObjects):
                     modeIndex = 0
             elif startRect.collidepoint(mouseX, mouseY):
                 if durationChoice:
+                    print(durationChoice, modeTypes[modeIndex])
                     return durationChoice, modeTypes[modeIndex]
             else:
 
@@ -582,10 +694,11 @@ def test():
     print(sessionQuiz.correctEnglishPronoun)
 
     print(sessionQuiz.polishPronounLabels)
+    print(sessionQuiz.englishPronounLabels)
     print(sessionQuiz.polishWordLabels)
         
 
 
 if __name__ == "__main__":
-    # mainQuiz()
-    test()
+    mainQuiz()
+    # test()
